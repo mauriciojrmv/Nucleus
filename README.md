@@ -86,7 +86,7 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/mauriciojrmv/nucleus.git
+git clone https://github.com/mauriciojrmv/Nucleus.git
 cd nucleus
 
 # Install dependencies
@@ -223,8 +223,8 @@ eas build -p ios --profile production
 - [ ] 📤 Export data to CSV (to-do)
 - [ ] 🔔 Push notifications (requires dev build) (to-do)
 - [ ] 🌍 English language support (to-do)
-- [*] 🎨 Full theme switching (light mode)
-- [*] 📊 Weekly/monthly reports
+- [] 🎨 Full theme switching (light mode)
+- [] 📊 Weekly/monthly reports
 - [ ] 🔄 Cloud sync / backup (to-do)
 - [ ] 🏆 Achievements and badges (to-do)
 
