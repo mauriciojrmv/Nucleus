@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, Modal, TextInput, Switch, StatusBar, Alert,
+  StyleSheet, Modal, TextInput, Switch, StatusBar, Alert, Platform, KeyboardAvoidingView,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTaskStore } from '../store/taskStore';
@@ -393,15 +393,19 @@ export default function HomeScreen({ isFocused }) {
 
       {/* Add / Edit Task Modal */}
       <Modal visible={taskModalVisible} transparent animationType="slide">
-        <TouchableOpacity
-          style={s.overlay}
-          onPress={() => {
-            setTaskModalVisible(false);
-            setEditingTask(null);
-            setNewTask(EMPTY_TASK);
-          }}
-        />
-        <View style={s.sheet}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+        >
+          <TouchableOpacity
+            style={s.overlay}
+            onPress={() => {
+              setTaskModalVisible(false);
+              setEditingTask(null);
+              setNewTask(EMPTY_TASK);
+            }}
+          />
+          <View style={s.sheet}>
           <Text style={s.sheetTitle}>
             {editingTask ? '✏️ Editar Tarea' : strings.newTask}
           </Text>
@@ -480,12 +484,17 @@ export default function HomeScreen({ isFocused }) {
             </TouchableOpacity>
           )}
         </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Add Transaction Modal */}
       <Modal visible={txModalVisible} transparent animationType="slide">
-        <TouchableOpacity style={s.overlay} onPress={() => setTxModalVisible(false)} />
-        <View style={s.sheet}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+        >
+          <TouchableOpacity style={s.overlay} onPress={() => setTxModalVisible(false)} />
+          <View style={s.sheet}>
           <Text style={s.sheetTitle}>
             {txType === 'income' ? '💵 Nuevo Ingreso' : '💸 Nuevo Gasto'}
           </Text>
@@ -525,6 +534,7 @@ export default function HomeScreen({ isFocused }) {
             <Text style={s.addButtonText}>{strings.addTransaction}</Text>
           </TouchableOpacity>
         </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {showDatePicker && (

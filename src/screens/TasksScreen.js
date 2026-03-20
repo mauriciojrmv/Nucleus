@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, Modal, TextInput, Switch, Alert,
+  StyleSheet, Modal, TextInput, Switch, Alert, Platform, KeyboardAvoidingView,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTaskStore } from '../store/taskStore';
@@ -273,19 +273,23 @@ export default function TasksScreen({ isFocused }) {
       </TouchableOpacity>
 
       <Modal visible={modalVisible} transparent animationType="slide">
-        <TouchableOpacity
-          style={s.overlay}
-          onPress={() => {
-            setModalVisible(false);
-            setEditingTask(null);
-            setNewTask(EMPTY_TASK);
-          }}
-        />
-        <ScrollView
-          style={{ backgroundColor: 'transparent' }}
-          contentContainerStyle={{ justifyContent: 'flex-end', flexGrow: 1 }}
-          keyboardShouldPersistTaps="handled"
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
         >
+          <TouchableOpacity
+            style={s.overlay}
+            onPress={() => {
+              setModalVisible(false);
+              setEditingTask(null);
+              setNewTask(EMPTY_TASK);
+            }}
+          />
+          <ScrollView
+            style={{ backgroundColor: 'transparent' }}
+            contentContainerStyle={{ justifyContent: 'flex-end', flexGrow: 1 }}
+            keyboardShouldPersistTaps="handled"
+          >
           <View style={s.sheet}>
             <Text style={s.sheetTitle}>
               {editingTask ? '✏️ Editar Tarea' : strings.newTask}
@@ -378,6 +382,7 @@ export default function TasksScreen({ isFocused }) {
             )}
           </View>
         </ScrollView>
+        </KeyboardAvoidingView>
       </Modal>
 
       {showDatePicker && (

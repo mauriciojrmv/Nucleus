@@ -21,6 +21,10 @@ export default function DashboardScreen({ isFocused }) {
   } = useTaskStore();
 
   useEffect(() => {
+    loadDashboard();
+  }, []);
+
+  useEffect(() => {
     if (isFocused) {
       loadDashboard();
     }
@@ -28,25 +32,133 @@ export default function DashboardScreen({ isFocused }) {
 
   const formatAmount = (amount) => currency + ' ' + parseFloat(amount).toFixed(0);
 
+  const getSmartTips = () => {
+    const tips = [];
+
+    if (balance.income === 0) return [];
+
+    const savingsRate = (balance.income - balance.expenses) / balance.income;
+    const topCategories = expensesByCategory.slice(0, 3);
+
+    topCategories.forEach((cat) => {
+      const percentage = Math.round((cat.total / balance.income) * 100);
+      const categoryName = cat.category;
+
+      if (categoryName.includes('Comida') && percentage > 30) {
+        tips.push('🍔 Gastar el ' + percentage + '% de tus ingresos en comida es alto. Considera cocinar en casa más seguido.');
+      } else if (categoryName.includes('Comida') && percentage > 20) {
+        tips.push('🍔 Llevas el ' + percentage + '% en comida. Pequeños cambios como llevar almuerzo pueden ayudar.');
+      }
+
+      if (categoryName.includes('Entretenimiento') && percentage > 15) {
+        tips.push('🎮 Entretenimiento al ' + percentage + '% de tus ingresos. Busca alternativas gratuitas o de bajo costo.');
+      }
+
+      if (categoryName.includes('Transporte') && percentage > 20) {
+        tips.push('🚗 Transporte al ' + percentage + '% es significativo. ¿Podrías combinar viajes o usar transporte público?');
+      }
+
+      if (categoryName.includes('Ropa') && percentage > 10) {
+        tips.push('👕 Ropa al ' + percentage + '% este mes. Considera esperar ofertas o comprar solo lo necesario.');
+      }
+
+      if (categoryName.includes('Salud') && percentage > 15) {
+        tips.push('💊 Gastos de salud al ' + percentage + '%. Recuerda que la prevención es más económica que el tratamiento.');
+      }
+
+      if (categoryName.includes('Alquiler') && percentage > 40) {
+        tips.push('🏠 Alquiler al ' + percentage + '% de tus ingresos. Lo ideal es que no supere el 30%.');
+      }
+
+      if (categoryName.includes('Educación')) {
+        tips.push('📚 Invertir en educación es positivo. Asegúrate de balancearlo con tus otros gastos.');
+      }
+    });
+
+    if (savingsRate < 0) {
+      tips.push('⚠️ Estás gastando más de lo que ganas. Intenta identificar gastos que puedas reducir esta semana.');
+      tips.push('💡 Regla 50/30/20: 50% necesidades, 30% deseos, 20% ahorro.');
+    } else if (savingsRate < 0.1) {
+      tips.push('💡 Estás ahorrando menos del 10%. Intenta separar aunque sea el 5% de tus ingresos apenas los recibas.');
+    } else if (savingsRate < 0.2) {
+      tips.push('👍 Vas bien, pero podrías ahorrar más. Intenta llegar al 20% reduciendo gastos no esenciales.');
+    } else if (savingsRate >= 0.3) {
+      tips.push('🌟 ¡Excelente hábito de ahorro! Considera invertir tu excedente para hacerlo crecer.');
+    }
+
+    if (savingsGoals.length === 0 && balance.income > 0) {
+      tips.push('🎯 No tienes metas de ahorro. Crear una meta concreta te ayuda a ahorrar más.');
+    }
+
+    if (savingsGoals.length > 0) {
+      const atRisk = savingsGoals.filter(g => g.current_amount < g.target_amount * 0.1);
+      if (atRisk.length > 0) {
+        tips.push('🎯 La meta "' + atRisk[0].name + '" necesita más atención. ¿Puedes aportar algo esta semana?');
+      }
+    }
+
+    return tips.slice(0, 3);
+  };
+
   const getFinancialScore = () => {
     if (balance.income === 0 && balance.expenses === 0) return null;
-    let score = 100;
-    if (balance.expenses > balance.income) score -= 50;
-    else if (balance.expenses > balance.income * 0.9) score -= 30;
-    else if (balance.expenses > balance.income * 0.7) score -= 10;
-    const goalsOnTrack = savingsGoals.filter(g => g.current_amount >= g.target_amount * 0.3).length;
+    if (balance.income === 0) return 0;
+
+    const savingsRate = (balance.income - balance.expenses) / balance.income;
+
+    let score = 0;
+    if (savingsRate >= 0.5) score = 100;
+    else if (savingsRate >= 0.3) score = 85;
+    else if (savingsRate >= 0.2) score = 70;
+    else if (savingsRate >= 0.1) score = 55;
+    else if (savingsRate >= 0) score = 35;
+    else if (savingsRate >= -0.2) score = 15;
+    else score = 0;
+
     if (savingsGoals.length > 0) {
-      if (goalsOnTrack === 0) score -= 20;
-      else if (goalsOnTrack < savingsGoals.length) score -= 10;
+      const goalsOnTrack = savingsGoals.filter(
+        g => g.current_amount >= g.target_amount * 0.3
+      ).length;
+      const goalBonus = Math.round((goalsOnTrack / savingsGoals.length) * 10);
+      score = Math.min(100, score + goalBonus);
     }
-    return Math.max(0, Math.min(100, score));
+
+    return score;
   };
 
   const getFinancialStatus = (score) => {
-    if (score === null) return { color: colors.textMuted, emoji: '⚪', label: 'Sin datos', message: 'Agrega transacciones para ver tu salud financiera.' };
-    if (score >= 70) return { color: colors.income, emoji: '🟢', label: '¡Vas muy bien!', message: balance.expenses <= balance.income * 0.7 ? 'Tus gastos están bajo control este mes.' : 'Cerca del límite pero aún en verde.' };
-    if (score >= 40) return { color: colors.warning, emoji: '🟡', label: 'Atención', message: balance.expenses > balance.income * 0.9 ? 'Estás gastando casi todo tu ingreso.' : 'Algunas metas de ahorro necesitan atención.' };
-    return { color: colors.expense, emoji: '🔴', label: 'Alerta', message: 'Tus gastos superan tus ingresos este mes.' };
+    if (score === null) return {
+      color: colors.textMuted,
+      emoji: '⚪',
+      label: 'Sin datos',
+      message: 'Agrega transacciones para ver tu salud financiera.',
+    };
+
+    const savingsRate = balance.income > 0
+      ? Math.round(((balance.income - balance.expenses) / balance.income) * 100)
+      : 0;
+    const savingsAmount = balance.income - balance.expenses;
+
+    if (score >= 70) return {
+      color: colors.income,
+      emoji: '🟢',
+      label: '¡Vas muy bien!',
+      message: 'Ahorrando el ' + savingsRate + '% (' + formatAmount(savingsAmount) + ') este mes.',
+    };
+    if (score >= 40) return {
+      color: colors.warning,
+      emoji: '🟡',
+      label: 'Puedes mejorar',
+      message: savingsRate >= 0
+        ? 'Ahorrando solo el ' + savingsRate + '% de tus ingresos.'
+        : 'Gastando más de lo que ganas.',
+    };
+    return {
+      color: colors.expense,
+      emoji: '🔴',
+      label: '¡Alerta!',
+      message: 'Gastando el ' + Math.abs(savingsRate) + '% más de lo que ganas.',
+    };
   };
 
   const getTaskScore = () => {
@@ -71,6 +183,7 @@ export default function DashboardScreen({ isFocused }) {
   const financialStatus = getFinancialStatus(financialScore);
   const taskStatus = getTaskStatus(taskScore);
   const avgTaskRate = taskScore || 0;
+  const smartTips = getSmartTips();
 
   const pieData = expensesByCategory.slice(0, 6).map((item, index) => ({
     value: item.total,
@@ -125,6 +238,22 @@ export default function DashboardScreen({ isFocused }) {
             <Text style={s.healthCardMessage}>{taskStatus.message}</Text>
           </View>
         </View>
+
+        {/* Smart Tips */}
+        {smartTips.length > 0 && (
+          <View style={s.card}>
+            <Text style={s.cardTitle}>💡 Consejos Personalizados</Text>
+            {smartTips.map((tip, index) => (
+              <View key={index} style={s.tipRow}>
+                <View style={[s.tipDot, {
+                  backgroundColor: index === 0 ? colors.primary :
+                    index === 1 ? colors.warning : colors.income,
+                }]} />
+                <Text style={s.tipText}>{tip}</Text>
+              </View>
+            ))}
+          </View>
+        )}
 
         {/* Summary */}
         <View style={s.summaryRow}>
@@ -316,6 +445,9 @@ const makeStyles = (colors) => StyleSheet.create({
   summaryAmount: { fontSize: 13, fontWeight: '700' },
   card: { backgroundColor: colors.card, borderRadius: 16, padding: 16, marginBottom: 16 },
   cardTitle: { color: colors.textPrimary, fontSize: 15, fontWeight: '700', marginBottom: 16 },
+  tipRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 14 },
+  tipDot: { width: 8, height: 8, borderRadius: 4, marginTop: 5, flexShrink: 0 },
+  tipText: { color: colors.textSecondary, fontSize: 13, lineHeight: 20, flex: 1 },
   pieContainer: { alignItems: 'center', marginBottom: 16 },
   pieCenter: { alignItems: 'center' },
   pieCenterAmount: { color: colors.textPrimary, fontSize: 13, fontWeight: '700' },

@@ -167,9 +167,9 @@ const makeStyles = (colors) => StyleSheet.create({
     backgroundColor: colors.card,
     borderTopWidth: 1,
     borderTopColor: colors.border,
-    paddingBottom: 20,
+    paddingBottom: 34,
     paddingTop: 8,
-    height: 70,
+    height: 90,
     position: 'relative',
   },
   activeIndicator: {
